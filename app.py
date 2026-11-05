@@ -204,11 +204,11 @@ MEETING_PROMPT_TEMPLATE = """
 7. 최종 취소된 업무는 제외합니다.
 8. 업무는 유지되고 마감일만 취소됐다면 해당 업무를 유지하고 마감일은 미정으로 처리합니다.
 9. 반복 언급된 동일 업무는 하나로 정리합니다.
-10. 원본 근거는 회의록 문장을 그대로 인용합니다.
+10. 원문 인용은 events.evidence에만 넣습니다. summary에는 원본 근거와 회의록 발언을 넣지 않습니다.
 11. 업무의 우선순위가 명시되지 않았다면 임의로 우선순위를 정하지 않습니다.
 
 [summary 작성 기준]
-summary에는 사람이 읽기 좋은 한국어 보고서를 작성합니다.
+summary에는 사람이 읽기 좋은 한국어 보고서를 작성합니다. 원본 근거, 회의록 인용, 화자 발언은 넣지 않습니다. 그 인용은 events.evidence에만 둡니다.
 
 첫 줄:
 회의 주제를 작성하고 "미팅 내용을 요약해 전달드립니다."라고 안내합니다.
@@ -225,7 +225,6 @@ summary에는 사람이 읽기 좋은 한국어 보고서를 작성합니다.
    - 해야 할 일: 회의록에 나온 업무 내용
    - 마감일: 회의록에 나온 최종 기한
    - 구체적인 요청사항: 회의록에 나온 요청사항
-   - 원본 근거: 실제 회의록 문장
 
 업무가 여러 개면 같은 형식을 반복합니다.
 
@@ -243,8 +242,8 @@ events에는 김 대리에게 최종 배정된 업무만 넣습니다.
 기존 JSON 필드명과 자료형을 변경하지 않습니다.
 
 - summary: 업무 제목
-- evidence: 업무 배정의 근거가 되는 실제 회의록의 연속 문장을 그대로 인용합니다. 없으면 빈 문자열입니다.
-- description: 해야 할 일과 구체적인 요청사항
+- description: 해야 할 일과 구체적인 요청사항을 짧게 정리합니다. 원문 인용은 넣지 않습니다.
+- evidence: 아래 [evidence 작성 규칙]을 따른 회의록 연속 구간입니다. 없으면 빈 문자열입니다.
 - owner: "김대리"
 - due_text: 회의록에 나온 최종 기한 표현
 - has_clock_time: 명확한 시각이 있을 때만 true
@@ -264,11 +263,27 @@ events에는 김 대리에게 최종 배정된 업무만 넣습니다.
 6. 동일 업무는 events에 중복 추가하지 않습니다.
 7. 김 대리에게 확정된 업무가 없다면 events는 빈 배열입니다.
 
+[evidence 작성 규칙]
+원문 근거는 events.evidence에만 넣습니다. summary에는 "원본 근거" 항목과 회의록 인용을 쓰지 않습니다.
+1. evidence는 회의록에 적힌 연속 구간을 한 글자도 바꾸지 않고 복사합니다. 요약, 의역, 축약, 문장 재작성은 실패입니다.
+2. 화자 표기(팀장:, 박 과장:, 최대리: 등)를 회의록과 똑같이 남깁니다. 화자를 빼거나 이름만 정리하지 않습니다.
+3. 배정 문장 하나만 넣지 않습니다. 그 업무에 대해 아래가 들어 있는 연속 구간을 통째로 넣습니다.
+   - 김 대리에게 그 업무를 최종 배정하는 발언
+   - 그 업무에서 해야 할 일을 구체화한 발언
+   - 최종 마감 날짜와 시각을 확정하는 발언
+   - 같은 마감을 영어, 일본어, 사투리로 다시 확인한 발언
+   - 같은 업무에서 취소했거나 적용하지 않기로 한 기한
+4. 배정 발언과 최종 마감 확정 사이에 있는 문장은 건너뛰지 않습니다.
+5. 사투리, 영어, 일본어를 표준어로 고치거나 번역하거나 빼지 않습니다. 맞춤법과 띄어쓰기도 회의록 그대로입니다.
+6. 다른 업무, 다른 사람의 업무, 회의를 마무리하며 전체를 다시 정리한 발언은 넣지 않습니다.
+7. 회의록에 없는 단어가 있으면 잘못된 evidence입니다. 더 짧게 줄이지 말고 원문의 연속 구간으로 다시 고칩니다.
+8. 근거가 없으면 빈 문자열입니다. 짧은 요약문으로 대신하지 않습니다.
+
 [최종 확인]
 1. 회의록 전체를 확인하여 김 대리 업무 누락 여부를 검토합니다.
 2. summary와 events에 포함된 업무가 일치하는지 확인합니다.
 3. 취소되거나 변경된 업무와 기한이 정확하게 반영됐는지 확인합니다.
-4. 담당자, 업무, 마감일, 원본 근거를 만들어내지 않습니다.
+4. 담당자, 업무, 마감일, 원본 근거를 만들어내지 않습니다. evidence가 배정 문장만 있고 최종 마감·다른 언어·사투리·취소된 기한을 빠뜨렸으면 그 업무의 evidence를 다시 작성합니다.
 5. JSON 외의 설명이나 코드 블록을 출력하지 않습니다.
 
 [회의록]
@@ -1834,9 +1849,9 @@ def render_meetings():
     with summary_tab:
         with st.container(border=True, key='card_summary'):
             if st.session_state.summary:
-                st.markdown(readable_markdown(st.session_state.summary))
+                summary_text = summary_without_quotes(st.session_state.summary)
+                st.markdown(summary_text)
                 st.caption('🔊 회의 요약 내용을 음성으로도 들을 수 있어요.')
-                summary_text = readable_markdown(st.session_state.summary)
                 summary_key = hashlib.sha256(summary_text.encode('utf-8')).hexdigest()
                 if st.button('🔊 회의 요약 듣기', key='listen_meeting_summary', use_container_width=True):
                     try:
@@ -2217,6 +2232,14 @@ def render_calendar_diagnostics():
 def readable_markdown(text):
     """Normalize excessive blank lines without modifying stored meeting facts."""
     return re.sub(r'\n[ \t]*\n(?:[ \t]*\n)+', '\n\n', str(text or '').strip())
+
+def summary_without_quotes(text):
+    """회의 요약 화면에서는 원문 근거 인용을 빼서 보여 줍니다. 업무 카드의 evidence는 그대로입니다."""
+    kept = [
+        line for line in str(text or '').splitlines()
+        if not re.match(r'\s*-?\s*원본\s*근거\s*[:：]', line)
+    ]
+    return readable_markdown('\n'.join(kept))
 
 def close_ui_dialog():
     st.session_state.pop('active_dialog', None)
